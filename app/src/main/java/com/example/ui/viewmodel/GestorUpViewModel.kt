@@ -406,16 +406,43 @@ class GestorUpViewModel(application: Application) : AndroidViewModel(application
     .flatMapLatest { mesAno -> repository.getEscalaMensal(mesAno) }
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+  private suspend fun copyUriToInternalStorage(context: Context, uriString: String, mesAno: String): String {
+    return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+      try {
+        val uri = android.net.Uri.parse(uriString)
+        val dir = File(context.filesDir, "escalas_mensais").apply { if (!exists()) mkdirs() }
+        val destFile = File(dir, "escala_$mesAno.jpg")
+
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+          destFile.outputStream().use { outputStream ->
+            inputStream.copyTo(outputStream)
+          }
+        }
+        destFile.absolutePath
+      } catch (e: Exception) {
+        e.printStackTrace()
+        uriString
+      }
+    }
+  }
+
   fun salvarEscalaMensal(imageUri: String, notas: String = "") {
     viewModelScope.launch {
-      repository.salvarEscalaMensal(_selectedMonth.value, imageUri, notas)
+      val mesAno = _selectedMonth.value
+      val persistentPath = copyUriToInternalStorage(getApplication(), imageUri, mesAno)
+      repository.salvarEscalaMensal(mesAno, persistentPath, notas)
       _uiEvents.emit("Imagem da escala mensal anexada com sucesso!")
     }
   }
 
   fun removerEscalaMensal() {
     viewModelScope.launch {
-      repository.removerEscalaMensal(_selectedMonth.value)
+      val mesAno = _selectedMonth.value
+      try {
+        val file = File(getApplication<Application>().filesDir, "escalas_mensais/escala_$mesAno.jpg")
+        if (file.exists()) file.delete()
+      } catch (_: Exception) {}
+      repository.removerEscalaMensal(mesAno)
       _uiEvents.emit("Imagem da escala removida.")
     }
   }
