@@ -35,15 +35,14 @@ jobs:
           fi
           
           # Verify checksum
-          cd apk-distribution
-          sha256sum -c app-debug.apk.sha256
+          sha256sum -c apk-distribution/app-debug.apk.sha256
           if [ $? -ne 0 ]; then
             echo "::error::Checksum validation failed!"
             exit 1
           fi
           
           # Verify zip structure
-          unzip -tq app-debug.apk
+          unzip -tq apk-distribution/app-debug.apk
           if [ $? -ne 0 ]; then
             echo "::error::Invalid APK zip structure!"
             exit 1
