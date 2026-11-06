@@ -21,7 +21,7 @@ jobs:
         run: |
           APK_PATH="apk-distribution/app-release.apk"
           if [ ! -f "$APK_PATH" ]; then
-            APK_PATH="apk-distribution/app-debug.apk"
+            APK_PATH="apk-distribution/GestorUp.apk"
           fi
 
           if [ ! -f "$APK_PATH" ]; then
@@ -57,16 +57,29 @@ jobs:
           
           APK_FILE="apk-distribution/app-release.apk"
           if [ ! -f "$APK_FILE" ]; then
-            APK_FILE="apk-distribution/app-debug.apk"
+            APK_FILE="apk-distribution/GestorUp.apk"
           fi
 
-          gh release create "$TAG_NAME" \
-            "$APK_FILE" \
-            --title "GestorUp v1.3 (Build ${{ github.run_number }})" \
-            --notes "Compilação oficial de release assinada do aplicativo GestorUp." \
-            --clobber \
-            --latest
-          
+          if [ ! -f "$APK_FILE" ]; then
+            echo "::error::Release APK file not found!"
+            exit 1
+          fi
+
+          # 1. Create release if it doesn't already exist (without invalid --clobber flag)
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists."
+          else
+            echo "Creating release $TAG_NAME..."
+            gh release create "$TAG_NAME" \
+              --title "GestorUp v1.3 (Build ${{ github.run_number }})" \
+              --notes "Compilação oficial de release assinada do aplicativo GestorUp." \
+              --latest
+          fi
+
+          # 2. Upload APK asset using gh release upload with --clobber
+          echo "Uploading $APK_FILE to release $TAG_NAME..."
+          gh release upload "$TAG_NAME" "$APK_FILE" --clobber
+
           echo "RELEASE_TAG=$TAG_NAME" >> $GITHUB_ENV
 
       - name: Report
