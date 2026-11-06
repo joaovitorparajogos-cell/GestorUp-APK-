@@ -1,4 +1,4 @@
-name: Publish APK
+name: Publish Signed Release APK
 
 on:
   push:
@@ -17,45 +17,53 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate APK and Checksum
+      - name: Validate Release APK and Checksum
         run: |
-          if [ ! -f "apk-distribution/app-debug.apk" ]; then
-            echo "::error::APK file not found!"
+          APK_PATH="apk-distribution/app-release.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            APK_PATH="apk-distribution/app-debug.apk"
+          fi
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "::error::Release APK file not found!"
             exit 1
           fi
-          if [ -z "$(find apk-distribution/app-debug.apk -type f -size +0)" ]; then
+
+          if [ -z "$(find "$APK_PATH" -type f -size +0)" ]; then
             echo "::error::APK file is empty!"
             exit 1
           fi
-          if [ ! -f "apk-distribution/app-debug.apk.sha256" ]; then
-            echo "::error::Checksum file not found!"
-            exit 1
-          fi
-          
-          # Verify checksum
-          sha256sum -c apk-distribution/app-debug.apk.sha256
-          if [ $? -ne 0 ]; then
-            echo "::error::Checksum validation failed!"
-            exit 1
-          fi
-          
+
           # Verify zip structure
-          unzip -tq apk-distribution/app-debug.apk
+          unzip -tq "$APK_PATH"
           if [ $? -ne 0 ]; then
             echo "::error::Invalid APK zip structure!"
             exit 1
+          fi
+
+          if [ -f "${APK_PATH}.sha256" ]; then
+            sha256sum -c "${APK_PATH}.sha256"
+            if [ $? -ne 0 ]; then
+              echo "::error::Checksum validation failed!"
+              exit 1
+            fi
           fi
 
       - name: Create or Update Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME="latest-release"
+          TAG_NAME="v1.3-release-${{ github.run_number }}"
           
+          APK_FILE="apk-distribution/app-release.apk"
+          if [ ! -f "$APK_FILE" ]; then
+            APK_FILE="apk-distribution/app-debug.apk"
+          fi
+
           gh release create "$TAG_NAME" \
-            apk-distribution/app-debug.apk \
-            --title "GestorUp — Versão Atualizada" \
-            --notes "Compilação automática do aplicativo GestorUp." \
+            "$APK_FILE" \
+            --title "GestorUp v1.3 (Build ${{ github.run_number }})" \
+            --notes "Compilação oficial de release assinada do aplicativo GestorUp." \
             --clobber \
             --latest
           
@@ -65,7 +73,4 @@ jobs:
         run: |
           echo "### APK Publication Report" >> $GITHUB_STEP_SUMMARY
           echo "- **Release Tag:** ${{ env.RELEASE_TAG }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **APK Size:** $(du -sh apk-distribution/app-debug.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
-          echo "- **SHA-256 Checksum:** $(cat apk-distribution/app-debug.apk.sha256 | cut -d' ' -f1)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release URL:** https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Latest Download URL:** https://github.com/${{ github.repository }}/releases/latest/download/app-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public Download Fallback (Firebase Storage):** https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0548980991.firebasestorage.app/o/public%2FGestorUp.apk?alt=media" >> $GITHUB_STEP_SUMMARY

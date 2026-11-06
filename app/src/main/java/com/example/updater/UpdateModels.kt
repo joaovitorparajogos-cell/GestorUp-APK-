@@ -10,10 +10,11 @@ data class UpdateConfig(
   val owner: String = "joaovitorparajogos-cell",
   val repo: String = "GestorUp-APK",
   val expectedApkName: String = "app-release.apk",
-  val fallbackApkName: String = "app-debug.apk",
+  val fallbackApkName: String = "GestorUp.apk",
   val currentVersionCode: Int = BuildConfig.VERSION_CODE,
   val currentVersionName: String = BuildConfig.VERSION_NAME,
   val apiUrl: String = "https://api.github.com/repos/$owner/$repo/releases/latest",
+  val publicFirebaseUrl: String = "https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0548980991.firebasestorage.app/o/public%2FGestorUp.apk?alt=media"
 )
 
 /**
