@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /colaboradores/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /escalas_diarias/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /anotacoes_diarias/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /escalas_mensais/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /pendencias/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+name: Publish APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'apk-distribution/app-debug.apk'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate APK and Checksum
+        run: |
+          if [ ! -f "apk-distribution/app-debug.apk" ]; then
+            echo "::error::APK file not found!"
+            exit 1
+          fi
+          if [ -z "$(find apk-distribution/app-debug.apk -type f -size +0)" ]; then
+            echo "::error::APK file is empty!"
+            exit 1
+          fi
+          if [ ! -f "apk-distribution/app-debug.apk.sha256" ]; then
+            echo "::error::Checksum file not found!"
+            exit 1
+          fi
+          
+          # Verify checksum
+          cd apk-distribution
+          sha256sum -c app-debug.apk.sha256
+          if [ $? -ne 0 ]; then
+            echo "::error::Checksum validation failed!"
+            exit 1
+          fi
+          
+          # Verify zip structure
+          unzip -tq app-debug.apk
+          if [ $? -ne 0 ]; then
+            echo "::error::Invalid APK zip structure!"
+            exit 1
+          fi
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="debug-apk-build-${{ github.run_number }}-${{ github.run_attempt }}"
+          
+          gh release create "$TAG_NAME" \
+            apk-distribution/app-debug.apk \
+            --title "Debug APK Build ${{ github.run_number }}-${{ github.run_attempt }}" \
+            --notes "Automatic release of debug APK build." \
+            --latest
+          
+          echo "RELEASE_TAG=$TAG_NAME" >> $GITHUB_ENV
+
+      - name: Report
+        run: |
+          echo "### APK Publication Report" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Tag:** ${{ env.RELEASE_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **APK Size:** $(du -sh apk-distribution/app-debug.apk | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA-256 Checksum:** $(cat apk-distribution/app-debug.apk.sha256 | cut -d' ' -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL:** https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Latest Download URL:** https://github.com/${{ github.repository }}/releases/latest/download/app-debug.apk" >> $GITHUB_STEP_SUMMARY

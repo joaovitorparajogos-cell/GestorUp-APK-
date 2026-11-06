@@ -1,0 +1,6 @@
+{
+  "name": "GestorUp",
+  "description": "Sua equipe. Sua gestão. Tudo em ordem. Gestão inteligente de equipe, escalas, pendências e produtividade.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,24 @@
+{
+  "collections": {
+    "users": {
+      "rules": "request.auth != null && request.auth.uid == userId",
+      "subcollections": {
+        "colaboradores": {
+          "rules": "request.auth != null"
+        },
+        "escalas_diarias": {
+          "rules": "request.auth != null"
+        },
+        "anotacoes_diarias": {
+          "rules": "request.auth != null"
+        },
+        "escalas_mensais": {
+          "rules": "request.auth != null"
+        },
+        "pendencias": {
+          "rules": "request.auth != null"
+        }
+      }
+    }
+  }
+}
