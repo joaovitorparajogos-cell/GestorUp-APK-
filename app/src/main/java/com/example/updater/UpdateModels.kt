@@ -7,7 +7,7 @@ import java.io.File
  * Configuração do repositório GitHub para verificação e download de atualizações.
  */
 data class UpdateConfig(
-  val owner: String = "joaovitormf2001-cmd",
+  val owner: String = "joaovitorparajogos-cell",
   val repo: String = "GestorUp-APK",
   val expectedApkName: String = "app-release.apk",
   val fallbackApkName: String = "app-debug.apk",
